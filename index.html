@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="hy">
 <head>
-    
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACROBATIC - Admin Panel</title>
     <style>
@@ -204,8 +203,7 @@
             <h2>Երեխաների Ցուցակ (<span id="childCount">0</span>)</h2>
             <button class="btn btn-add" id="openAddModalBtn">+ Ավելացնել Երեխա</button>
         </div>
-        <div id="childrenList">
-        </div>
+        <div id="childrenList"></div>
     </div>
 </div>
 
@@ -296,7 +294,6 @@
     let allStudents = [];
     let currentFilter = "all";
 
-    // Էլեմենտներ
     const childrenList = document.getElementById('childrenList');
     const childCountText = document.getElementById('childCount');
     const addModal = document.getElementById('addModal');
@@ -306,14 +303,12 @@
     const timeGroup = document.getElementById('timeGroup');
     const classTimeSelect = document.getElementById('classTime');
 
-    // --- Ընդհանուր ֆունկցիա` տվյալ դահլիճ/սպորտաձևի համար հասանելի ժամերը ---
     function getAvailableTimes(location, sportType) {
         if (location === 'Masis') return ['17:00', '18:30'];
         if (location === 'Artashat' && sportType === 'Ակրոբատիկա') return ['15:00', '16:30', '18:00', '19:30'];
-        return []; // օր. Artashat + Ըմբշամարտ -> ֆիքսված ժամ չկա
+        return [];
     }
 
-    // Ցուցակի տողում ամեն երեխայի համար լրացնում ենք Ժամ select-ը` ըստ ընտրված դահլիճ/սպորտաձևի
     function populateRowTimeSelect(studentId, location, sportType, currentTime) {
         const timeSelect = document.getElementById(`time-${studentId}`);
         if (!timeSelect) return;
@@ -340,20 +335,16 @@
         }
     }
 
-    // --- Նկարի սեղմման/փոքրացման ֆունկցիա (Client-side resize) ---
     function resizeImage(file, maxSize = 1000, quality = 0.8) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             const reader = new FileReader();
 
-            reader.onload = (e) => {
-                img.src = e.target.result;
-            };
+            reader.onload = (e) => { img.src = e.target.result; };
             reader.onerror = reject;
 
             img.onload = () => {
                 let { width, height } = img;
-
                 if (width > height) {
                     if (width > maxSize) {
                         height = Math.round(height * (maxSize / width));
@@ -374,31 +365,32 @@
 
                 canvas.toBlob((blob) => {
                     if (!blob) {
-                        reject(new Error("Նկարը հնարավոր չեղավ սեղմել"));
+                        reject(new Error("Նկարը սեղմել չհաջողվեց"));
                         return;
                     }
                     resolve(blob);
                 }, 'image/jpeg', quality);
             };
 
-            img.onerror = () => reject(new Error("Նկարը հնարավոր չեղավ բացել"));
-
+            img.onerror = () => reject(new Error("Նկարը բացել չհաջողվեց"));
             reader.readAsDataURL(file);
         });
     }
 
-    // Բեռնել տվյալները Firestore-ից
     async function loadData() {
         childrenList.innerHTML = "Բեռնվում է...";
         allStudents = [];
-        const querySnapshot = await getDocs(collection(db, "registrations"));
-        querySnapshot.forEach((doc) => {
-            allStudents.push({ id: doc.id, ...doc.data() });
-        });
-        renderList();
+        try {
+            const querySnapshot = await getDocs(collection(db, "registrations"));
+            querySnapshot.forEach((doc) => {
+                allStudents.push({ id: doc.id, ...doc.data() });
+            });
+            renderList();
+        } catch (error) {
+            childrenList.innerHTML = "Տվյալների բեռնման սխալ.";
+        }
     }
 
-    // Ցուցակի արտածում ըստ ֆիլտրի
     function renderList() {
         childrenList.innerHTML = "";
         let filtered = allStudents.filter(student => {
@@ -470,10 +462,8 @@
             `;
             childrenList.appendChild(row);
 
-            // Դահլիճ/Ժամ select-երի սկզբնական լրացում
             populateRowTimeSelect(student.id, loc, loc === 'Masis' ? 'Մասիսի խումբ' : sport, student.classTime || '');
 
-            // Դահլիճի փոփոխություն
             document.getElementById(`loc-${student.id}`).addEventListener('change', function() {
                 const newLoc = this.value;
                 const sportSelect = document.getElementById(`sport-${student.id}`);
@@ -486,13 +476,11 @@
                 populateRowTimeSelect(student.id, newLoc, newLoc === 'Masis' ? 'Մասիսի խումբ' : sportSelect.value, '');
             });
 
-            // Սպորտաձևի փոփոխություն
             document.getElementById(`sport-${student.id}`).addEventListener('change', function() {
                 const newLoc = document.getElementById(`loc-${student.id}`).value;
                 populateRowTimeSelect(student.id, newLoc, this.value, '');
             });
 
-            // Ինֆո Կոճակ` ցույց է տալիս ծնողի գրանցած ԲՈԼՈՐ տվյալները (առանց նկարի, նկարը մնում է իր տեղում)
             document.getElementById(`info-${student.id}`).addEventListener('click', () => {
                 const infoModal = document.getElementById('infoModal');
                 document.getElementById('infoModalTitle').textContent = `${student.childName} ${student.childSurname} - Տվյալներ`;
@@ -515,7 +503,6 @@
                 infoModal.classList.remove('hidden');
             });
 
-            // Պատմություն Կոճակ
             document.getElementById(`hist-${student.id}`).addEventListener('click', () => {
                 const hModal = document.getElementById('historyModal');
                 document.getElementById('historyModalTitle').textContent = `${student.childName} ${student.childSurname} - Պատմություն`;
@@ -553,7 +540,6 @@
                 hModal.classList.remove('hidden');
             });
 
-            // Պահպանել տվյալ երեխայի կարգավիճակը (դահլիճ/սպորտաձև/ժամ + վճար + հաճախում)
             document.getElementById(`save-${student.id}`).addEventListener('click', async (e) => {
                 const btnSave = e.target;
                 btnSave.disabled = true;
@@ -590,7 +576,6 @@
                         classTime: timeStatus
                     });
 
-                    // ԼՈԿԱԼ ԹԱՐՄԱՑՈՒՄ
                     student.isPaid = payStatus;
                     student.attendance = updatedAttendance;
                     student.payments = updatedPayments;
@@ -598,7 +583,6 @@
                     student.sportType = sportStatus;
                     student.classTime = timeStatus;
 
-                    // Թարմացնում ենք .history-text դիվի պարունակությունը
                     const row = btnSave.closest('.child-row');
                     if (row) {
                         const historyDiv = row.querySelector('.history-text');
@@ -614,20 +598,18 @@
                         }
                     }
 
-                    // Մաքրում ենք հաճախման select-ը
                     document.getElementById(`att-${student.id}`).value = "";
-                    alert("Պահպանվեց:");
+                    alert("Տվյալները պահպանվեցին.");
                 } catch (err) {
-                    alert("Սխալ պահպանելիս: " + err.message);
+                    alert("Սխալ պահպանելիս. " + err.message);
                 } finally {
                     btnSave.disabled = false;
                     btnSave.textContent = oldText;
                 }
             });
 
-            // Ջնջել Բազայից
             document.getElementById(`del-${student.id}`).addEventListener('click', async () => {
-                if (confirm(`Վստա՞հ եք, որ ուզում եք ջնջել ${student.childName}-ին բազայից:`)) {
+                if (confirm(`Վստա՞հ եք, որ ուզում եք ջնջել ${student.childName}-ին բազայից.`)) {
                     await deleteDoc(doc(db, "registrations", student.id));
                     loadData();
                 }
@@ -635,7 +617,6 @@
         });
     }
 
-    // Ֆիլտրերի սեղմման իրադարձություն
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -645,26 +626,23 @@
         });
     });
 
-    // Փակել Ամիսը (Բոլորին սարքում է Չվճարված)
     document.getElementById('closeMonthBtn').addEventListener('click', async () => {
-        if (confirm("Վստա՞հ եք, որ ուզում եք փակել ամիսը: Բոլոր հաճախորդների կարգավիճակը կդառնա ՉՎՃԱՐՎԱԾ:")) {
+        if (confirm("Վստա՞հ եք, որ ուզում եք փակել ամիսը. Բոլորի կարգավիճակը կդառնա ՉՎՃԱՐՎԱԾ.")) {
             for (let student of allStudents) {
                 if (student.isPaid) {
                     await updateDoc(doc(db, "registrations", student.id), { isPaid: false });
                 }
             }
-            alert("Ամիսը փակված է:");
+            alert("Ամիսը փակված է.");
             loadData();
         }
     });
 
-    // Մոդալի բացել/փակելը
     document.getElementById('openAddModalBtn').addEventListener('click', () => addModal.classList.remove('hidden'));
     document.getElementById('closeAddModalBtn').addEventListener('click', () => addModal.classList.add('hidden'));
     document.getElementById('closeHistoryModalBtn').addEventListener('click', () => document.getElementById('historyModal').classList.add('hidden'));
     document.getElementById('closeInfoModalBtn').addEventListener('click', () => document.getElementById('infoModal').classList.add('hidden'));
 
-    // Դինամիկ Ժամեր մոդալի ներսում (Ավելացնել Նոր Երեխա ֆորմայում)
     locationSelect.addEventListener('change', function() {
         const selectedLocation = this.value;
         classTimeSelect.innerHTML = '';
@@ -694,7 +672,6 @@
         }
     });
 
-    // Նոր երեխայի գրանցում մոդալից (Cloudinary + Firestore)
     document.getElementById('registrationForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = document.getElementById('submitBtn');
@@ -736,19 +713,18 @@
             };
 
             await addDoc(collection(db, "registrations"), formData);
-            alert("Երեխան հաջողությամբ ավելացվեց բազա:");
+            alert("Երեխան հաջողությամբ ավելացվեց.");
             addModal.classList.add('hidden');
             document.getElementById('registrationForm').reset();
             loadData();
         } catch (err) {
-            alert("Սխալ: " + err.message);
+            alert("Սխալ. " + err.message);
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = "Պահպանել Բազայում";
         }
     });
 
-    // Առաջին բեռնումը
     loadData();
 </script>
 </body>
